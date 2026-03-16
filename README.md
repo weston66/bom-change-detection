@@ -112,11 +112,6 @@ bom_audit_log
 
 ---
 
-## Screenshots / Demo
+## Demo
 
-_Screenshots pending. On a detected change, the Slack alert includes:_
-
-- _Change type (ADDED / REMOVED / MODIFIED) per part_
-- _BOM ID and affected parent/child parts_
-- _Fields modified (old vs. new values)_
-- _Total change count with overflow handling for large diffs_
+[Watch the demo on Loom](https://www.loom.com/share/466c525710064a20a1a78c4101f68d4e)
