@@ -1,6 +1,6 @@
 import os
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from db import query, execute
 from snapshot import load_snapshot, save_snapshot, bom_to_dict
@@ -23,7 +23,7 @@ def log_change(bom_id: str, change_type: str, old_value: dict, new_value: dict):
         INSERT INTO bom_audit_log (bom_id, change_type, old_value, new_value, detected_at)
         VALUES (%s, %s, %s, %s, %s)
         """,
-        (bom_id, change_type, str(old_value), str(new_value), datetime.utcnow()),
+        (bom_id, change_type, str(old_value), str(new_value), datetime.now(timezone.utc)),
     )
 
 
@@ -65,7 +65,7 @@ def format_slack_message(changes: list[dict]) -> str:
 
 
 def run():
-    print(f"[{datetime.utcnow().isoformat()}] Running BOM change detection...")
+    print(f"[{datetime.now(timezone.utc).isoformat()}] Running BOM change detection...")
 
     rows = query("SELECT * FROM bom")
     current_bom = bom_to_dict(rows)
