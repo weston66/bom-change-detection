@@ -1,0 +1,65 @@
+name: BOM Change Detection
+
+on:
+  schedule:
+    - cron: "0 8 * * *"  # runs daily at 8am UTC
+  workflow_dispatch:      # allows manual trigger from GitHub UI
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: erp_user
+          POSTGRES_PASSWORD: erp_pass
+          POSTGRES_DB: erp_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Apply audit log migration
+        env:
+          PGPASSWORD: erp_pass
+        run: psql -h localhost -U erp_user -d erp_dev -f audit_log.sql
+
+      - name: Restore BOM snapshot cache
+        uses: actions/cache@v4
+        with:
+          path: bom_snapshot.json
+          key: bom-snapshot-${{ github.ref }}
+          restore-keys: bom-snapshot-
+
+      - name: Run BOM change detection
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: erp_dev
+          DB_USER: erp_user
+          DB_PASS: erp_pass
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python detect.py
+
+      - name: Save updated BOM snapshot
+        uses: actions/cache/save@v4
+        with:
+          path: bom_snapshot.json
+          key: bom-snapshot-${{ github.ref }}-${{ github.run_id }}
